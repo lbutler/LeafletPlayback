@@ -20,12 +20,13 @@ L.Playback = L.Playback.Clock.extend({
     this.map = map;
     this.geoJSON = geoJSON;
     this.tickPoints = [];
+    this.callback = callback;
     if (geoJSON instanceof Array) {
       for(var i=0,len=geoJSON.length;i<len;i++){
-        this.tickPoints.push( new L.Playback.TickPoint(geoJSON[i], this.options.tickLen) );
+        this.addTracks(geoJSON[i]);
       }
     } else {
-      this.tickPoints.push( new L.Playback.TickPoint(geoJSON, this.options.tickLen) );
+      this.addTracks(geoJSON);
     }
     this.tick = new L.Playback.Tick(map, this.tickPoints);
     L.Playback.Clock.prototype.initialize.call(this, this.tick, callback, this.options);
@@ -42,9 +43,18 @@ L.Playback = L.Playback.Clock.extend({
     console.log('addTracks');
     console.log(geoJSON);
     var newTickPoint = new L.Playback.TickPoint(geoJSON, this.options.tickLen);
-    this.tick.addTickPoint(newTickPoint, this.getTime());
-    $('#time-slider').slider('option','min',this.getStartTime());
-    $('#time-slider').slider('option','max',this.getEndTime());
+    if (this.tick && this.tick.addTickPoint){
+      this.tick.addTickPoint(newTickPoint, this.getTime());
+      $('#time-slider').slider('option','min',this.getStartTime());
+      $('#time-slider').slider('option','max',this.getEndTime());
+    } else {
+      this.tick = new L.Playback.Tick(this.map, newTickPoint);
+      this.addClock();
+    }
+  },
+
+  addClock: function (){
+    L.Playback.Clock.prototype.initialize.call(this, this.tick, this.callback, this.options);
   }
 
 });
@@ -57,4 +67,4 @@ L.Map.addInitHook(function() {
 
 L.playback = function(map, geoJSON, callback, options) {
   return new L.Playback(map, geoJSON, callback, options);
-}
+};
